@@ -1,0 +1,47 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C / C++ build artifacts
+*.o
+*.obj
+*.so
+*.dylib
+*.a
+build/
+bin/
+CMakeCache.txt
+CMakeFiles/
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Prime Kernel & Engine cache (isolated per workspace, zero git commit pollution)
+.prime-kernel/
+*.db
+*.db-wal
+*.db-shm
+
+# PRAXIST Research raw scraping and transient caches (preserves structured dossiers in git)
+.prime-research/raw/
+.prime-research/tmp/
+
+# IDE and OS
+.DS_Store
+.vscode/
+*.swp
+*.swo
+
+# Distribution / Packaging
+dist/
+*.egg-info/
+.eggs/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/

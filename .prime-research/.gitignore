@@ -1,0 +1,5 @@
+# Ephemeral raw scrapes, PDF downloads, and transient dumps
+raw/
+tmp/
+*.raw.html
+*.pdf
