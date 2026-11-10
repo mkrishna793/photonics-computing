@@ -1,5 +1,17 @@
 # Plan v2: A Physics + Math Unified Compiler for Photonic and Memristive Hardware
 
+> **Implementation checkpoint (2026-11-10).** This document is the long-term research
+> vision, not a claim that all layers exist. The executable MVP now implements
+> bounded straight-line rational arithmetic, explicit physical-domain/error checks,
+> an exact independent certificate checker, and one static-weight MZI/DAC/SW-1
+> demonstration. See [README](README.md), [milestone status](docs/milestones.md), and
+> [verification boundaries](docs/verification.md). The Lean build is pending external
+> validation; numeric obligation export is not yet a full source-to-physics proof.
+>
+> **Near-term scope:** one bounded arithmetic graph and one illustrative calibrated
+> MZI. Arbitrary functions, generalized device selection, solver integration,
+> memristor lowering, physical scheduling, and closed-loop control remain future work.
+
 **Goal.** Compile *any* mathematics into physical control parameters (voltages, currents, pulses, wavelengths, timings) for light-based and memristor-based chips. All arithmetic reduces to a **Core Analog Algebra** of four operations (+, −, ×, ÷). Each operation can be realized physically in many ways, organized as an extensible **Physics Tree**. Each step is checked by math (Lean4), constraints (Z3/dReal) and a physics simulator (the "Small World") before anything touches hardware. A timing layer with closed-loop correction keeps the hardware correct while it runs.
 
 ---
@@ -30,7 +42,7 @@ L5  Timing + Adaptive   physics-derived timing (ps ... s), disturbance
 
 Three checking tools run at every level:
 - **Lean4 + Mathlib**: general theorems ("for all inputs in range, this lowering is within ε").
-- **Z3 / dReal**: checks for one specific program on one specific chip (ranges, power, timing, wavelength spacing). dReal is needed because Z3 cannot reason about `exp`, `sin`, `ln`.
+- **Z3 / dReal**: checks for one specific program on one specific chip (ranges, power, timing, wavelength spacing). Use validated transcendental enclosures or dReal for exp/sin/log constraints outside Z3's supported theories. dReal is δ-complete: δ-sat is not exact satisfiability; unknown/timeouts must fail closed. Solver certificates and their trusted checker must be specified.
 - **Small World simulator**: executes the physics with noise, drift and crosstalk, and checks that physical laws are obeyed.
 
 ---
@@ -46,7 +58,7 @@ Three checking tools run at every level:
   - `const c`: a reference value (laser power level, reference voltage, stored conductance)
   - `fanout x → (x, x)`: copying is **not free** physically. An optical 1:2 splitter gives each output amplitude x/√2 (power x/2), so the compiler must track it.
   - `route`: waveguide or wire connections, which add loss and delay
-  - `store / load`: memory (memristor or PCM states persist at 0 W)
+  - `store / load`: memory (memristor or PCM states need no refresh power; read/write and peripheral energy still count)
   - `convert`: optical↔electrical (O/E, E/O) and analog↔digital (ADC/DAC)
   - `compare / select`: for control flow (`if`, `while`). This is either an analog comparator, or the program is split so a digital host handles control flow and analog hardware runs the arithmetic.
 
@@ -125,7 +137,7 @@ div (abstract)
 ├── Feedback (TIA/op-amp)         V_out = −V_in · G_in / G_fb   (memristor in feedback path)
 ├── Optical gain normalization    detector/TIA gain set to 1/c
 ├── Iterative (Newton)            1/b via x_{k+1} = x_k(2 − b·x_k), uses mul + sub
-└── Digital fallback              when b varies fast and must be exact
+└── Digital fallback              when b varies fast or specified digital precision is preferable; arbitrary real division is not generally exact
 ```
 
 ### 2.2 What a Physics Tree node is (formal contract)
@@ -146,7 +158,7 @@ Each node `n` refines its parent and must provide:
 
 **Innovation = adding a node.** A researcher who invents a new way to multiply with light, or a new memristor stack, writes a node (data file + small Lean proof file + simulator model). The compiler accepts it **only if**:
 1. its Lean refinement proof checks (or a solver discharges the obligations on the declared ranges),
-2. it passes the Small World physics checks (laws obeyed, error within claim under Monte Carlo),
+2. it passes model-level law checks and statistical validation; Monte Carlo is diagnostic evidence, not a universal error proof,
 3. its knob binding passes L4 safety checks.
 
 **Choosing a branch** is an optimization pass: for each abstract op, pick the node that minimizes cost (energy/latency/area) under the error budget and the available hardware. Users can also pin choices manually.
@@ -201,7 +213,7 @@ Every knob is specified like a datasheet entry, with units enforced by type:
 
 Inverse models (parameter → knob), with their traps (all registered in each node's `knob_binding`):
 - **Thermo-optic**: `Δφ = φ0 + k·V²` ⇒ `V = √(((Δφ − φ0) mod 2π)/k)`; minimum-power branch; your numbers check out (k = π/8 rad/V²).
-- **Thermal crosstalk** is linear in power: `φ = C·P`, `P_i = V_i²/R_i` ⇒ solve `P = C⁻¹φ`, check `P ≥ 0` and limits (LP / Z3), then `V_i = √(P_i R_i)`.
+- **Thermal crosstalk** is linear in power: `φ = C·P`, `P_i = V_i²/R_i` ⇒ solve `C·P = φ` subject to `P ≥ 0` and limits (LP / Z3); use `C⁻¹φ` only when the model is invertible and well-conditioned, then `V_i = √(P_i R_i)`.
 - **Electro-optic**: `V = V_π·Δφ/π`.
 - **Attenuator**: `I = α⁻¹(−ln T / L)` with calibrated monotone α(I); clamp at T_min; compensate the side-effect phase shift.
 - **Microring**: δ² = (TΓ² − γ²)/(1 − T); choose one side of resonance (±δ) consistently; T_min = γ²/Γ² unless critically coupled.
@@ -217,7 +229,7 @@ Inverse models (parameter → knob), with their traps (all registered in each no
 ### 5.1 Physics-derived timing
 
 Timescales span about 15 orders of magnitude, from optical propagation (ps) to drift (seconds to hours). Timing is **computed from physics, not guessed**:
-- Exponential settling: a heater with time constant τ needs `t ≥ τ · ln(ΔV / tolerance)` to be within tolerance, so **settling time follows from the required precision**.
+- Exponential settling: a first-order modeled state with time constant τ needs `t ≥ max(0, τ · ln(initial_state_error / state_tolerance))` to be within tolerance, so **settling time follows from the required precision**.
 - Propagation delay: `t = n_g · L / c` per waveguide segment (path-length matching for coherent interference).
 - Pulse schedules: memristor/PCM pulse + verify-read + thermal cool-down between pulses.
 - Conversion: DAC update rate, ADC conversion time, photodetector bandwidth.
@@ -287,6 +299,6 @@ ONNX/StableHLO/own DSL import, calibration from real measurements.
 
 ## 8. Open decisions
 
-1. **Compiler core language**: Rust + Lean certificates (recommended), or the whole compiler written in Lean4?
-2. **First Physics Tree branches to build end to end**: photonic (MZI + attenuator + balanced detector) first (recommended), memristor first, or both together?
-3. **Repo**: new GitHub repo (name?) or local only for now?
+1. **Compiler core language**: Rust chosen for the executable MVP; independent exact certificate checking is implemented. Full Lean certificate-refinement linkage remains open.
+2. **First branch**: static-weight thermo-optic MZI chosen and demonstrated at model level. Additional photonic branches and memristors follow after the verification bridge.
+3. **Repo**: this repository, `photonics-computing`; executable/formal CI definitions are included.

@@ -1,0 +1,8 @@
+# Toolchains, dependencies, generated proofs, and reports
+**/target/
+**/.lake/
+**/*.olean
+**/*.ilean
+**/__pycache__/
+.venv/
+artifacts/

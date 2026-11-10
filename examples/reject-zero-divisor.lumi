@@ -1,0 +1,5 @@
+lumiris 1
+input denominator -1 1 0
+const one 1 0
+div y one denominator 0 -2 2 -10 10
+output y 1
