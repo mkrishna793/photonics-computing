@@ -1,8 +1,8 @@
 import Lumiris.Core.Approx
- 
+
 /-!
 # L2 Core Analog Algebra: syntax, exact semantics, realized semantics, certified error budget
- 
+
 `Expr` is the abstract core: constants, inputs, and the four field operations `+ − × ÷`.
 `eval` is the exact mathematical meaning. `realEval` is what analog hardware computes when
 each operation is realized by an approximate physical process (`Realization`).
@@ -10,9 +10,11 @@ The main theorem `budget_sound` proves that the compiler-computed `errBound` rea
 the difference, and `range_sound` proves that range analysis is sound — the two facts a
 certificate checker needs.
 -/
- 
+
+noncomputable section
+
 namespace Lumiris
- 
+
 inductive Expr where
   | const : ℝ → Expr
   | var   : ℕ → Expr
@@ -20,9 +22,9 @@ inductive Expr where
   | sub   : Expr → Expr → Expr
   | mul   : Expr → Expr → Expr
   | div   : Expr → Expr → Expr
- 
+
 namespace Expr
- 
+
 /-- Exact (digital, infinite-precision) meaning. -/
 noncomputable def eval (env : ℕ → ℝ) : Expr → ℝ
   | const c => c
@@ -31,7 +33,7 @@ noncomputable def eval (env : ℕ → ℝ) : Expr → ℝ
   | sub a b => a.eval env - b.eval env
   | mul a b => a.eval env * b.eval env
   | div a b => a.eval env / b.eval env
- 
+
 /-- Range analysis under a typing context `Γ` giving the range of each input. -/
 noncomputable def range (Γ : ℕ → Range) : Expr → Range
   | const c => Range.point c
@@ -40,7 +42,7 @@ noncomputable def range (Γ : ℕ → Range) : Expr → Range
   | sub a b => (a.range Γ).sub (b.range Γ)
   | mul a b => (a.range Γ).mul (b.range Γ)
   | div a b => (a.range Γ).div (b.range Γ)
- 
+
 /-- Every divisor is bounded away from zero (checked by Z3 per instance). -/
 def divSafe (Γ : ℕ → Range) : Expr → Prop
   | const _ => True
@@ -49,7 +51,7 @@ def divSafe (Γ : ℕ → Range) : Expr → Prop
   | sub a b => a.divSafe Γ ∧ b.divSafe Γ
   | mul a b => a.divSafe Γ ∧ b.divSafe Γ
   | div a b => a.divSafe Γ ∧ b.divSafe Γ ∧ 0 < (b.range Γ).minMag
- 
+
 theorem range_sound {Γ : ℕ → Range} {env : ℕ → ℝ} (henv : ∀ i, (Γ i).contains (env i)) :
     ∀ e : Expr, e.divSafe Γ → (e.range Γ).contains (e.eval env)
   | const c, _ => Range.contains_point c
@@ -59,10 +61,11 @@ theorem range_sound {Γ : ℕ → Range} {env : ℕ → ℝ} (henv : ∀ i, (Γ 
   | mul a b, ⟨ha, hb⟩ => Range.contains_mul (range_sound henv a ha) (range_sound henv b hb)
   | div a b, ⟨ha, hb, hsafe⟩ =>
       Range.contains_div hsafe (range_sound henv a ha) (range_sound henv b hb)
- 
+
 end Expr
- 
-/-- A physical realization of the four core operations: each is computed by a process that is
+
+/-- Legacy idealized global realization. Real devices should use `Bounded.Contract`.
+Each operation is computed by a process that is
 within a fixed `ε` of the exact operation. Inputs may also be encoded with error `εvar`. -/
 structure Realization where
   addR : ℝ → ℝ → ℝ
@@ -83,9 +86,9 @@ structure Realization where
   subR_spec : ∀ a b, |subR a b - (a - b)| ≤ εsub
   mulR_spec : ∀ a b, |mulR a b - a * b| ≤ εmul
   divR_spec : ∀ a b, b ≠ 0 → |divR a b - a / b| ≤ εdiv
- 
+
 namespace Expr
- 
+
 /-- What the analog hardware computes. -/
 noncomputable def realEval (ρ : Realization) (env' : ℕ → ℝ) : Expr → ℝ
   | const c => c
@@ -94,7 +97,7 @@ noncomputable def realEval (ρ : Realization) (env' : ℕ → ℝ) : Expr → �
   | sub a b => ρ.subR (a.realEval ρ env') (b.realEval ρ env')
   | mul a b => ρ.mulR (a.realEval ρ env') (b.realEval ρ env')
   | div a b => ρ.divR (a.realEval ρ env') (b.realEval ρ env')
- 
+
 /-- Compiler-computed error budget. -/
 noncomputable def errBound (ρ : Realization) (Γ : ℕ → Range) : Expr → ℝ
   | const _ => 0
@@ -107,7 +110,7 @@ noncomputable def errBound (ρ : Realization) (Γ : ℕ → Range) : Expr → �
   | div a b =>
       (a.errBound ρ Γ * (b.range Γ).mag + (a.range Γ).mag * b.errBound ρ Γ)
         / ((b.range Γ).minMag * ((b.range Γ).minMag - b.errBound ρ Γ)) + ρ.εdiv
- 
+
 /-- Realized divisors stay away from zero: the accumulated error on a divisor is smaller than
 its guaranteed magnitude. Checked by Z3 per instance. -/
 noncomputable def budgetSafe (ρ : Realization) (Γ : ℕ → Range) : Expr → Prop
@@ -117,7 +120,7 @@ noncomputable def budgetSafe (ρ : Realization) (Γ : ℕ → Range) : Expr → 
   | sub a b => a.budgetSafe ρ Γ ∧ b.budgetSafe ρ Γ
   | mul a b => a.budgetSafe ρ Γ ∧ b.budgetSafe ρ Γ
   | div a b => a.budgetSafe ρ Γ ∧ b.budgetSafe ρ Γ ∧ b.errBound ρ Γ < (b.range Γ).minMag
- 
+
 theorem errBound_nonneg (ρ : Realization) (Γ : ℕ → Range) :
     ∀ e : Expr, e.budgetSafe ρ Γ → 0 ≤ e.errBound ρ Γ
   | const _, _ => le_rfl
@@ -140,7 +143,7 @@ theorem errBound_nonneg (ρ : Realization) (Γ : ℕ → Range) :
       have h3 : 0 < (b.range Γ).minMag - b.errBound ρ Γ := by linarith
       have h4 : 0 < (b.range Γ).minMag := by linarith
       simp only [errBound]; positivity
- 
+
 /-- **Certified error budget.** If inputs lie in their declared ranges, encoded inputs are
 within `εvar` of the true inputs, divisors are safe, then the analog result is within
 `errBound` of the exact mathematical result. -/
@@ -222,7 +225,7 @@ theorem budget_sound (ρ : Realization) {Γ : ℕ → Range} {env env' : ℕ →
               add_le_add (ρ.divR_spec _ _ hb'ne)
                 (ErrProp.div_bound hMa hMb ha hb hm bsafe hea0 heb0)
         _ = _ := by ring
- 
+
 end Expr
- 
+
 end Lumiris
