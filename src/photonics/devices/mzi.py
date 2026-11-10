@@ -1,4 +1,4 @@
-"""Mach-Zehnder Interferometer (MZI) and Directional Coupler models for photonic tensor meshes."""
+"""Mach-Zehnder Interferometer (MZI), Directional Coupler, and Thermal Crosstalk models."""
 
 from __future__ import annotations
 from dataclasses import dataclass
@@ -25,6 +25,40 @@ class DirectionalCoupler:
             [tau, 1j * kappa],
             [1j * kappa, tau]
         ], dtype=complex)
+
+
+@dataclass
+class ThermalCrosstalkModel:
+    """Thermal diffusion crosstalk between integrated silicon micro-heaters.
+
+    Coupling matrix K_ij = k_0 * exp(-abs(i - j) / decay_length).
+    Pre-compensation: driven_phases = (I + K)^(-1) @ target_phases.
+    """
+    coupling_strength: float = 0.15  # 15% crosstalk to adjacent neighbor
+    decay_length: float = 1.2        # Spatial decay in units of device pitch
+
+    def get_coupling_matrix(self, n_devices: int) -> np.ndarray:
+        """Constructs N x N thermal crosstalk coupling matrix K."""
+        k = np.zeros((n_devices, n_devices), dtype=float)
+        for i in range(n_devices):
+            for j in range(n_devices):
+                if i != j:
+                    k[i, j] = self.coupling_strength * np.exp(-abs(i - j) / self.decay_length)
+        return k
+
+    def apply_crosstalk(self, driven_phases: np.ndarray) -> np.ndarray:
+        """Computes perturbed effective phases: theta_eff = (I + K) @ theta_driven."""
+        phases = np.asarray(driven_phases, dtype=float)
+        n = len(phases)
+        k = self.get_coupling_matrix(n)
+        return (np.eye(n) + k) @ phases
+
+    def precompensate(self, target_phases: np.ndarray) -> np.ndarray:
+        """Computes pre-distorted drive phases so that effective phases match target."""
+        phases = np.asarray(target_phases, dtype=float)
+        n = len(phases)
+        k = self.get_coupling_matrix(n)
+        return np.linalg.solve(np.eye(n) + k, phases)
 
 
 class MachZehnderInterferometer:
