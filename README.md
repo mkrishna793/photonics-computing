@@ -6,7 +6,6 @@ Lumiris is a formally verified, physics-aware compiler and execution platform fo
 3. **Differential Memristor Crossbar Engine**: In-memory computing with differential conductance pairs ($W = \alpha(G^+ - G^-)$), finite DAC quantization, wire resistance ($IR$ drops), and retention drift.
 4. **L1 Transcendental Approximation Pass**: Chebyshev minimax polynomials and Padé approximants for $\exp(x), \tanh(x), \text{sigmoid}(x), \sin(x), \cos(x), \sqrt{x}$ with certified error bounds.
 5. **Lean 4 / Mathlib Formal Proofs**: Mathematical theorems covering optical energy conservation ($M^\dagger M = I$), DAC monotonicity, and interval error compositions.
-6. **Prime Agent RLM Architecture**: Superpowers TDD, pre-flight code integrity gates, and persistent REPL kernels.
 
 ---
 
@@ -46,25 +45,15 @@ L5 Small World (SW-1)  Simulation & physics validation: optical time-of-flight, 
 source .venv/bin/activate
 ```
 
-### 2. Run Comprehensive Test Suite (27/27 Tests)
+### 2. Run Comprehensive Test Suite (50/50 Tests)
 ```bash
-PYTHONPATH=src ./.venv/bin/pytest -v
+PYTHONPATH=src:scripts pytest -v
 ```
 
-### 3. Run Pre-Flight Code Integrity Gate
-```bash
-./.venv/bin/python scripts/verify_integrity.py
-```
-
-### 4. Run Rust Reference Compiler & MZI Demonstration
+### 3. Run Rust Reference Compiler & MZI Demonstration
 ```bash
 # Executable demonstration script (Rust compiler -> Python checker -> SW-1 simulation)
 ./scripts/demo.sh artifacts/demo-run
-```
-
-### 5. Interactive Persistent RLM REPL
-```bash
-./.venv/bin/python scripts/prime_repl_session.py
 ```
 
 ---
@@ -124,12 +113,11 @@ print(f"Sigmoid Degree {sig_approx.degree} Polynomial Error: {sig_approx.max_tru
 │   │   └── optical_engine.py # OpticalTensorCore, complex field propagation, PIN photodetectors
 │   └── benchmarks/
 │       └── benchmark_suite.py# Photonic vs Electronic comparative energy/latency profiling
-├── tests/                    # Comprehensive unit tests (27/27 passing in 0.65s)
-├── scripts/                  # Pre-flight gates, demo runners, and RLM REPL session
+├── tests/                    # Comprehensive unit tests (50/50 passing in 1.20s)
+├── scripts/                  # Upstream verification, checker, and simulation runners
 ├── Lean-Semantics/
 │   ├── rust/                 # Offline dependency-free Rust reference compiler
 │   └── lean/                 # Lean 4 / Mathlib formal verification theorems
 ├── docs/                     # Verification boundaries, IR formats, and milestones
-├── AGENTS.md                 # Universal multi-agent protocol for /prime-coder & /prime-research
 └── pyproject.toml            # Package configuration
 ```

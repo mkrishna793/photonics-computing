@@ -30,15 +30,22 @@ env/
 venv/
 ENV/
 
-# Prime Kernel & Engine cache (isolated per workspace, zero git commit pollution)
+# Local Agent & IDE Configuration Files (do NOT push to project repo)
+.cursorrules
+.windsurfrules
+AGENTS.md
+CLAUDE.md
+OPENCODE.md
+OPENEVOLVE.md
+.github/copilot-instructions.md
 .prime-kernel/
+.prime-research/
+scripts/prime_repl_session.py
+scripts/run_praxist_wave.py
+scripts/verify_integrity.py
 *.db
 *.db-wal
 *.db-shm
-
-# PRAXIST Research raw scraping and transient caches (preserves structured dossiers in git)
-.prime-research/raw/
-.prime-research/tmp/
 artifacts/
 
 # IDE and OS
