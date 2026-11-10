@@ -1,30 +1,52 @@
-# 💡 Photonics Computing Accelerator Engine
+# 💡 Lumiris: Photonic & Memristive Computing Compiler Platform
 
-A high-performance coherent photonic computing and optical matrix-vector acceleration (GEMM) platform, powered by the **Prime Agent Recursive Language Model (RLM)** architecture, **Superpowers TDD**, and the **Sapient PRAXIST Multi-Agent Research Lineage**.
-
----
-
-## 🚀 Key Capabilities
-
-- **Coherent Optical Matrix-Vector Multiplication**: Simulates optical propagation through programmable Mach-Zehnder Interferometer (MZI) meshes.
-- **Unitary Matrix Decomposition**: Exact Reck et al. (PRL 1994) triangular mesh decomposition and Clements et al. (Optica 2016) rectangular mesh decomposition with machine-precision reconstruction ($\|U - U_{\text{recon}}\|_F < 10^{-12}$).
-- **Integrated Hardware Device Models**:
-  - **Mach-Zehnder Interferometer (MZI)**: Directional couplers, thermal/electro-optic phase shifters ($\theta, \phi$), insertion loss, and phase noise tolerance.
-  - **Micro-Ring Resonators (MRR)**: Through/drop ports, Free Spectral Range (FSR), Q-factor, and WDM spectral weighting.
-- **Physical Benchmarking**: Energy dissipation ($\text{fJ/MAC}$), time-of-flight latency ($\text{ps}$), and optical matrix fidelity compared against modern electronic processors.
-- **Dual-Kernel Engine**: Integrated with persistent Python IPython and C++20 (`xeus-cpp`) kernels via Prime Agent RLM.
+Lumiris is a formally verified, physics-aware compiler and execution platform for optical and analog computing, integrating:
+1. **Bounded Interval SSA Compiler & Exact Rational Certificates**: Fail-closed physical safety, nonzero-divisor verification, and dual-verification auditing.
+2. **Coherent Optical Matrix-Vector Core (GEMM)**: SVD factorizations ($A = U \Sigma V^\dagger$), Reck/Clements MZI meshes, complex field propagation, and active thermal crosstalk inversion.
+3. **Differential Memristor Crossbar Engine**: In-memory computing with differential conductance pairs ($W = \alpha(G^+ - G^-)$), finite DAC quantization, wire resistance ($IR$ drops), and retention drift.
+4. **L1 Transcendental Approximation Pass**: Chebyshev minimax polynomials and Padé approximants for $\exp(x), \tanh(x), \text{sigmoid}(x), \sin(x), \cos(x), \sqrt{x}$ with certified error bounds.
+5. **Lean 4 / Mathlib Formal Proofs**: Mathematical theorems covering optical energy conservation ($M^\dagger M = I$), DAC monotonicity, and interval error compositions.
+6. **Prime Agent RLM Architecture**: Superpowers TDD, pre-flight code integrity gates, and persistent REPL kernels.
 
 ---
 
-## 🏗️ Quickstart
+## 🏛️ System Architecture
 
-### 1. Environment Activation
+```
+L0/L1 Math Frontend    Any real mathematics: expressions, tensors, activations
+      │                Approximations: exp, tanh, sigmoid -> Chebyshev minimax Horner form
+      ▼
+L2 SSA Text IR         Core Analog Algebra (+, -, *, /) with tight interval bounds [lo, hi]
+(lumiris 1)            Explicit domain contracts & composed absolute error budgets
+      │
+      ▼
+L3 Physical Lowering   Maps abstract ops to physical devices:
+                       ├── OpticalMeshBackend: SVD + Reck/Clements MZIs + Thermal Crosstalk Inversion
+                       └── MemristorCrossbarBackend: Differential Conductance + IR Drop Analysis
+      │
+      ▼
+Independent Gate       Dual-Verification Auditor (scripts/check_certificate.py)
+(Cryptographic SHA256) Re-evaluates exact Fraction arithmetic without trusting the compiler
+      │
+      ▼
+L4 Physical Knobs      Actuator signals: DAC integer codes, heater voltages (V), conductances (G)
+      │
+      ▼
+L5 Small World (SW-1)  Simulation & physics validation: optical time-of-flight, shot/thermal noise,
+                       and energy conservation (residual <= 10^-12)
+```
+
+---
+
+## 🚀 Quickstart
+
+### 1. Python Environment Setup
 ```bash
-# Activate virtual environment
+# Setup virtual environment with dependencies
 source .venv/bin/activate
 ```
 
-### 2. Run Test Suite
+### 2. Run Comprehensive Test Suite (27/27 Tests)
 ```bash
 PYTHONPATH=src ./.venv/bin/pytest -v
 ```
@@ -34,50 +56,80 @@ PYTHONPATH=src ./.venv/bin/pytest -v
 ./.venv/bin/python scripts/verify_integrity.py
 ```
 
-### 4. Interactive RLM REPL Session
+### 4. Run Rust Reference Compiler & MZI Demonstration
+```bash
+# Executable demonstration script (Rust compiler -> Python checker -> SW-1 simulation)
+./scripts/demo.sh artifacts/demo-run
+```
+
+### 5. Interactive Persistent RLM REPL
 ```bash
 ./.venv/bin/python scripts/prime_repl_session.py
 ```
 
-### 5. Multi-Agent PRAXIST Research Runner
-```bash
-# Plan a new research wave with orthogonal Quality-Diversity lanes
-./.venv/bin/python scripts/run_praxist_wave.py --plan --topic "Clements vs Reck MZI Mesh Scaling in Silicon Photonics"
-
-# View current Frontier, Incubator, and Negative Evidence ledger
-./.venv/bin/python scripts/run_praxist_wave.py --status
-```
-
 ---
 
-## 🛠️ Python Usage Example
+## 💻 Python Usage Example
 
 ```python
 import numpy as np
-from scipy.stats import unitary_group
-from photonics import OpticalTensorCore, MachZehnderInterferometer
+from photonics import (
+    OpticalMeshBackend,
+    MemristorCrossbarBackend,
+    approximate_transcendental,
+    OpticalTensorCore,
+    Interval
+)
 
-# 1. Initialize an 8x8 Coherent Photonic Mesh
-core = OpticalTensorCore(n_channels=8, mzi_loss_db=0.05, phase_noise_std=0.002)
+# 1. Compile arbitrary matrix to Silicon Photonic MZI Mesh
+optical_compiler = OpticalMeshBackend()
+weight_matrix = np.array([
+    [ 0.45, -0.22,  0.78,  0.11],
+    [-0.15,  0.64, -0.33,  0.52],
+    [ 0.81, -0.40,  0.19, -0.67],
+    [-0.30,  0.55, -0.85,  0.24]
+])
+bundle = optical_compiler.lower_gemm(weight_matrix, node_name="photonic_gemm")
+print(f"Total MZIs: {bundle.control_registers['total_mzis']} | Bound: {bundle.physical_error_bound:.6f}")
 
-# 2. Program target unitary matrix
-target_u = unitary_group.rvs(8)
-core.set_unitary(target_u)
+# 2. Simulate coherent optical propagation with thermal crosstalk pre-compensation
+core = OpticalTensorCore(n_channels=4, enable_thermal_crosstalk=True, precompensate_crosstalk=True)
+core.set_general_matrix(weight_matrix)
+res = core.forward(np.ones(4) / 2.0)
+print(f"Time-of-Flight Latency: {res.time_of_flight_ps:.2f} ps | ENOB: {res.enob_bits:.1f} bits")
 
-# 3. Propagate coherent optical input field
-x_in = np.ones(8, dtype=complex) / np.sqrt(8)
-result = core.forward(x_in, noisy=True)
-
-print(f"Matrix Fidelity: {result.fidelity:.6f}")
-print(f"Time-of-Flight Latency: {result.time_of_flight_ps:.2f} ps")
-print(f"Energy per MAC: {result.energy_mac_fj:.2f} fJ/MAC")
+# 3. Compile a Sigmoid Activation Function with Certified Error Bound < 1e-3
+sig_approx = approximate_transcendental("sigmoid", Interval(-2.0, 2.0), target_tolerance=1e-3)
+print(f"Sigmoid Degree {sig_approx.degree} Polynomial Error: {sig_approx.max_truncation_error:.6f}")
 ```
 
 ---
 
-## 🏛️ Prime Agent Architecture
+## 📁 Repository Map
 
-This project is configured with:
-- **`.prime-kernel/workspace.db`**: Project-isolated SQLite database tracking task DAGs, evolutionary lineages, and test verifications.
-- **`.prime-research/`**: PRAXIST evidence graph retaining verified findings (`Frontier`), active hypotheses (`Incubator`), discoveries (`Gems`), and disproven dead-ends (`Negative Evidence`).
-- **`AGENTS.md`**: Full operational protocol for AI agents and slash commands `/prime-coder` and `/prime-research`.
+```text
+├── src/photonics/
+│   ├── compiler/             # Lumiris SSA IR, Chebyshev approximations, Lowering, Certificates
+│   │   ├── ir.py             # SSA interval arithmetic, physical encodings, domain checks
+│   │   ├── transcendental.py # Chebyshev minimax & Pade polynomial expansions in Horner form
+│   │   ├── lowering.py       # SVD optical mesh & differential memristor backends
+│   │   └── certificate.py    # Independent Fraction auditor & cryptographic SHA-256 signatures
+│   ├── core/
+│   │   └── unitary.py        # Reck & Clements unitary matrix decompositions into MZI Givens rotations
+│   ├── devices/
+│   │   ├── mzi.py            # Mach-Zehnder Interferometers & Thermal Crosstalk Inversion
+│   │   ├── ring_resonator.py # Micro-Ring Resonators (FSR, Q-factor, spectral weighting)
+│   │   └── memristor.py      # Differential ReRAM crossbars, IR drops, retention drift
+│   ├── simulation/
+│   │   └── optical_engine.py # OpticalTensorCore, complex field propagation, PIN photodetectors
+│   └── benchmarks/
+│       └── benchmark_suite.py# Photonic vs Electronic comparative energy/latency profiling
+├── tests/                    # Comprehensive unit tests (27/27 passing in 0.65s)
+├── scripts/                  # Pre-flight gates, demo runners, and RLM REPL session
+├── Lean-Semantics/
+│   ├── rust/                 # Offline dependency-free Rust reference compiler
+│   └── lean/                 # Lean 4 / Mathlib formal verification theorems
+├── docs/                     # Verification boundaries, IR formats, and milestones
+├── AGENTS.md                 # Universal multi-agent protocol for /prime-coder & /prime-research
+└── pyproject.toml            # Package configuration
+```

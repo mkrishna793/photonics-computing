@@ -1,0 +1,6 @@
+lumiris 1
+input x 1 2 1/10000
+mul square x x 1/10000 0 3 0 5
+const one 1 0
+div y one square 1/10000 0 5 0 2
+output y 1/100

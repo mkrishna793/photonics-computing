@@ -1,0 +1,11 @@
+# Illustrative calibration, NOT a real chip datasheet or hardware authorization.
+lumiris-mzi 1
+id illustrative-thermo-optic-v1
+voltage_max 5
+dac_bits 12
+# rad / V^2; rational calibrated model parameter (not claimed equal to pi/8).
+phase_per_v2 392699/1000000
+phase_offset 0
+# Absolute bounded phase-model residual, including drift during one invocation.
+phase_error 1/100000
+input_limit 1

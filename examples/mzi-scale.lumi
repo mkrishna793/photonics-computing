@@ -1,0 +1,6 @@
+# Signed coherent amplitude, normalized so |E| <= 1.
+lumiris 1
+input x -9/10 9/10 1/10000
+const weight 1/2 0
+mul y weight x 1/1000 -1 1 -1 1
+output y 11/10000

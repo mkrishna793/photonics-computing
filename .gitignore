@@ -2,6 +2,16 @@
 __pycache__/
 *.py[cod]
 *$py.class
+**/__pycache__/
+
+# Rust / Cargo
+**/target/
+Cargo.lock
+
+# Lean 4 / Lake toolchains & build artifacts
+**/.lake/
+**/*.olean
+**/*.ilean
 
 # C / C++ build artifacts
 *.o
@@ -29,6 +39,7 @@ ENV/
 # PRAXIST Research raw scraping and transient caches (preserves structured dossiers in git)
 .prime-research/raw/
 .prime-research/tmp/
+artifacts/
 
 # IDE and OS
 .DS_Store

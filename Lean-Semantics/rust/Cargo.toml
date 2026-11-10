@@ -1,0 +1,14 @@
+[package]
+name = "lumiris"
+version = "0.2.0"
+edition = "2021"
+description = "Bounded arithmetic compiler and proof-carrying MZI demonstrator"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "lumiris"
+path = "src/main.rs"
+
+[dependencies]
