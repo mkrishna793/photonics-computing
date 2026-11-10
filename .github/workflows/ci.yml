@@ -10,12 +10,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: cargo fmt --manifest-path Lean-Semantics/rust/Cargo.toml -- --check
-      - run: scripts/test.sh
-      - run: scripts/demo.sh artifacts/mzi-demo
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path Lean-Semantics/rust/Cargo.toml -- --check
+      - name: Run test suite
+        run: scripts/test.sh
+      - name: Run MZI demonstration
+        run: scripts/demo.sh artifacts/mzi-demo
       - uses: actions/upload-artifact@v4
         with:
           name: mzi-demonstration
@@ -28,7 +38,15 @@ jobs:
         with:
           lake-package-directory: Lean-Semantics/lean
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: scripts/demo.sh artifacts/mzi-demo --lean
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run Lean demonstration verification
+        run: scripts/demo.sh artifacts/mzi-demo --lean
